@@ -3,7 +3,7 @@ use chrono::{Datelike, Local, NaiveDate};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
-struct Patient {
+pub struct Patient {
     #[serde(rename = "Id")]
     id: String,
     #[serde(rename = "BIRTHDATE")]
@@ -37,7 +37,7 @@ struct Patient {
 // Validation for Patient Struct
 impl Patient {
     // This function returns Ok(()) if valid, or error message if not
-    fn validate(&self) -> Result<(), String> {
+    pub fn validate(&self) -> Result<(), String> {
         // Check SSN length, to include dashes
         if self.ssn.len() != 11 {
             println!("Invalid SSN for PT ID: {}", self.id);
@@ -91,5 +91,9 @@ impl Patient {
             age -= 1;
         }
         age
+    }
+
+    pub fn get_id(&self) {
+        &self.id;
     }
 }
