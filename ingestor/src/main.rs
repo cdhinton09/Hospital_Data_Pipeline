@@ -1,5 +1,5 @@
 //#[allow(unused_variables, unused_imports, dead_code)]
-use chrono::NaiveDate;
+use chrono::{Datelike, Local, NaiveDate};
 //use std::error::Error;
 use serde::Deserialize;
 use std::fs::File;
@@ -71,6 +71,30 @@ impl Patient {
         };
         Ok(())
     }
+
+    // This  function returns a masked version of the Patients SSN for privacy
+    pub fn mask_ssn(&self) -> String {
+        if self.ssn.len() == 11 {
+            format!("XXX-XX-{}", &self.ssn[7..])
+        } else {
+            "INVALID-SSN".to_string()
+        }
+    }
+
+    // Calculate current age of the Patient
+    pub fn get_age(&self) -> i32 {
+        let birth = NaiveDate::parse_from_str(&self.birthdate, "%Y-%m-%d")
+            .unwrap_or_else(|_| NaiveDate::from_ymd_opt(1900, 1, 1).unwrap());
+
+        let now = Local::now().date_naive();
+        let mut age = now.year() - birth.year();
+
+        if now.month() < birth.month() || (now.month() == birth.month() && now.day() < birth.day())
+        {
+            age -= 1;
+        }
+        age
+    }
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Current directory: {:?}", std::env::current_dir());
@@ -79,28 +103,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let file = File::open(file_path)?;
     let mut records = csv::Reader::from_reader(file);
 
-    // Variables to keep track of valid records
-    let mut valid_count = 0;
-    let mut error_count = 0;
+    /* // Variables to keep track of valid records
+        let mut valid_count = 0;
+        let mut error_count = 0;
 
-    for result in records.deserialize() {
-        let record: Patient = result?;
+        for result in records.deserialize() {
+            let record: Patient = result?;
 
-        match record.validate() {
-            Ok(_) => {
-                // Later send these records to the Transform layer
-                valid_count += 1;
-            }
-            Err(e) => {
-                error_count += 1;
-                eprintln!("Validation Error: {}", e);
+            match record.validate() {
+                Ok(_) => {
+                    // Later send these records to the Transform layer
+                    valid_count += 1;
+                }
+                Err(e) => {
+                    error_count += 1;
+                    eprintln!("Validation Error: {}", e);
+                }
             }
         }
+
+        println!("Data Processing Complete");
+        println!("{} records successfully validated.", valid_count);
+        println!("{} records failed validated", error_count);
+    */
+
+    // Testing SSN Masking and age calculator
+    let mut count = 0;
+    for result in records.deserialize() {
+        let record: Patient = result?;
+        let masked_ssn = record.mask_ssn();
+        let pt_age = record.get_age();
+        println!(
+            "Patient ID: {} Masked SSN: {} Patient Age: {}",
+            count, masked_ssn, pt_age
+        );
+        count += 1;
     }
-
-    println!("Data Processing Complete");
-    println!("{} records successfully validated.", valid_count);
-    println!("{} records failed validated", error_count);
-
     Ok(())
 }
